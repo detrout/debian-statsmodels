@@ -4,12 +4,6 @@ statsmodels (0.6.1-1) experimental; urgency=medium
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Wed, 03 Dec 2014 11:06:18 -0500
 
-statsmodels (0.6.0-1) experimental; urgency=medium
-
-  * Dropping build-depends on pandas for to avoid circular dependency
-
- -- Yaroslav Halchenko <debian@onerussian.com>  Sun, 26 Oct 2014 10:33:25 -0400
-
 statsmodels (0.6.0~rc2-1) unstable; urgency=medium
 
   * Upstream release candidate
