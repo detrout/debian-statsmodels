@@ -19,7 +19,7 @@ IPYTHONVER := $(shell ipython -V || echo 0) # 0.12 is needed to build docs, othe
 IPYTHONPATH := $(shell dpkg --compare-versions $(IPYTHONVER) lt 0.13 \
 				 && echo ":/usr/lib/python$(PYVER)/dist-packages/IPython01X" || echo '')
 
-MIN_CYTHONVER = 0.15.1
+MIN_CYTHONVER = 0.19
 
 ifeq (,$(filter noopt,$(DEB_BUILD_OPTIONS)))
 export OPT+=-g -O0
