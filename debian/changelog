@@ -1,9 +1,10 @@
-statsmodels (0.6.1-2) UNRELEASED; urgency=medium
+statsmodels (0.6.1-3) unstable; urgency=medium
 
+  * upload to unstable -- jessie is out
   * debian/rules
     - raised minimal cython version to be used to 0.19
 
- -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 04 Dec 2014 20:05:59 -0500
+ -- Yaroslav Halchenko <debian@onerussian.com>  Sun, 17 May 2015 21:12:33 -0400
 
 statsmodels (0.6.1-1) experimental; urgency=medium
 
