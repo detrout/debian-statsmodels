@@ -1,8 +1,11 @@
 statsmodels (0.6.1-3) unstable; urgency=medium
 
   * upload to unstable -- jessie is out
-  * debian/rules
+  * debian/control
     - raised minimal cython version to be used to 0.19
+    - provide Build-Depends-Indep to separate handling for building
+	  binary-indep packages, and allow pandoc instead of nodejs
+	  for extra robustness (thanks Edmund for the hint) (Closes: #770631)
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Sun, 17 May 2015 21:12:33 -0400
 

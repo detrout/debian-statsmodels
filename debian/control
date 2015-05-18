@@ -9,14 +9,16 @@ Build-Depends: debhelper (>= 7.0.50~),
                python-scipy,
                python-nose,
                python-matplotlib,
-               python-sphinx (>= 1.0.6),
                python-pandas,
                python-joblib,
-               ipython-notebook (>= 0.13.1) | ipython01x, python-zmq,
+               ipython-notebook (>= 0.13.1) | ipython01x,
+               python-zmq,
                cython,
                python-patsy,
                python-cvxopt,
-               nodejs,
+Build-Depends-Indep:
+               python-sphinx (>= 1.0.6),
+               nodejs | pandoc,
 Standards-Version: 3.9.6
 X-Python-Version: >= 2.7
 Homepage: http://statsmodels.sourceforge.net/
