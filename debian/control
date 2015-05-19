@@ -65,6 +65,7 @@ Replaces: python-scikits-statsmodels-doc, python-scikits.statsmodels-doc
 Architecture: all
 Section: doc
 Depends: ${misc:Depends}, libjs-jquery
+Recommends: libjs-mathjax
 Suggests: python-statsmodels
 Description: documentation and examples for statsmodels
  This package contains HTML documentation and example scripts for

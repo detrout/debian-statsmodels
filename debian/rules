@@ -72,6 +72,9 @@ ifeq (,$(filter nodoc,$(DEB_BUILD_OPTIONS)))
 	PYTHONPATH=`/bin/ls -d $(CURDIR)/$(PACKAGE_ROOT_DIR)/usr/lib/python$(PYVER)/*/`:$(CURDIR)$(IPYTHONPATH) \
 	 $(MAKE) -C docs html
 	mv docs/build/* build/
+	: # Fix up links to MathJax to be local
+	grep -l '/mathjax/' -R build/html/examples/notebooks \
+	| xargs sed -i -e 's,https://\S*.com/mathjax/latest/MathJax.js,file:///usr/share/javascript/mathjax/MathJax.js,g'
 	rm -rf docs/source/generated/
 endif
 	touch $@
