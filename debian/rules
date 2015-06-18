@@ -6,11 +6,7 @@
 export HOME=$(CURDIR)/build
 export MPLCONFIGDIR=$(HOME)
 
-PACKAGE_NAME = python-statsmodels
-PACKAGE_ROOT_DIR = debian/${PACKAGE_NAME}
-
-PYVERS = $(shell pyversions -vr)
-PYVER = $(shell pyversions -vd)
+PYBUILD_NAME=statsmodels
 
 UVER := $(shell LC_ALL=C dpkg-parsechangelog | awk '/^Version:/{print $$2;}' | sed -e 's,-[^-]*$$,,g')
 CYTHONVER := $(shell dpkg -l cython | awk '/^ii/{print $$3;}' || echo 0)
@@ -26,7 +22,7 @@ export OPT+=-g -O0
 endif
 
 %:
-	dh  $@ --with python2
+	dh  $@ --with python2,python3,sphinxdoc --buildsystem=pybuild
 
 
 cythonize:
@@ -60,28 +56,32 @@ $(HOME):
 # Build docs during build
 override_dh_auto_build: $(HOME)
 	dh_auto_build
-	: # Hardcode backend to Agg to avoid doc build and tests failures
-	echo "backend : Agg" >| $(MPLCONFIGDIR)/matplotlibrc
+	sphinx-build docs/source/ build/html
 
-
-doc-stamp: python-install$(PYVER)
-	: # I: Generate documentation
-	: # Build Documentation -- assure existence of build/html for nodoc
-	mkdir -p build/html
-ifeq (,$(filter nodoc,$(DEB_BUILD_OPTIONS)))
-	PYTHONPATH=`/bin/ls -d $(CURDIR)/$(PACKAGE_ROOT_DIR)/usr/lib/python$(PYVER)/*/`:$(CURDIR)$(IPYTHONPATH) \
-	 $(MAKE) -C docs html
-	mv docs/build/* build/
-	: # Fix up links to MathJax to be local
-	grep -l '/mathjax/' -R build/html/examples/notebooks \
-	| xargs sed -i -e 's,https://\S*.com/mathjax/latest/MathJax.js,file:///usr/share/javascript/mathjax/MathJax.js,g'
-	rm -rf docs/source/generated/
-endif
-	touch $@
+#doc-stamp: python-install$(PYVER)
+#	: # I: Generate documentation
+#	: # Build Documentation -- assure existence of build/html for nodoc
+#	mkdir -p build/html
+#ifeq (,$(filter nodoc,$(DEB_BUILD_OPTIONS)))
+#	PYTHONPATH=`/bin/ls -d $(CURDIR)/$(PACKAGE_ROOT_DIR)/usr/lib/python$(PYVER)/*/`:$(CURDIR)$(IPYTHONPATH) \
+#	 $(MAKE) -C docs html
+#	mv docs/build/* build/
+#	: # Fix up links to MathJax to be local
+#	grep -l '/mathjax/' -R build/html/examples/notebooks \
+#	| xargs sed -i -e 's,https://\S*.com/mathjax/latest/MathJax.js,file:///usr/share/javascript/mathjax/MathJax.js,g'
+#	rm -rf docs/source/generated/
+#endif
+#	touch $@
 
 override_dh_auto_clean: $(HOME)
 	dh_auto_clean
 	-rm -f cythonize.dat
+	-rm -rf docs/source/dev/generated/
+	-rm docs/source/_static/gettingstarted_0.png
+	-rm docs/source/datasets/statsmodels.datasets.clear_data_home.rst
+	-rm docs/source/datasets/statsmodels.datasets.get_data_home.rst
+	-rm docs/source/datasets/statsmodels.datasets.get_rdataset.rst
+	-rm docs/source/datasets/statsmodels.datasets.webuse.rst
 
 override_dh_clean:
 	dh_clean
@@ -90,71 +90,36 @@ override_dh_clean:
 	rm -f statsmodels/version.py
 	rm -f doc-stamp
 
-override_dh_auto_install: ${PYVERS:%=python-install%} ${PYVERS:%=python-test%}
-
-# Per Python version logic -- install, test, move .so into -lib
-python-install%:
-	python$* setup.py install --install-layout=deb --root=$(PACKAGE_ROOT_DIR)
-
-python-test%: python-install%
-ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	: # Run unittests here against installed statsmodels
-	cd build/ && \
-	 PYTHONPATH=`/bin/ls -d $(CURDIR)/$(PACKAGE_ROOT_DIR)/usr/lib/python$*/*/` \
-	 MPLCONFIGDIR=$(CURDIR)/build \
-	 python$* /usr/bin/nosetests -s -v --exclude=sandbox statsmodels
-else
-	: # Skip unittests due to nocheck
-endif
-
-
-override_dh_install:
-	dh_install
-	: # Remove compiled due to testing files
+override_dh_auto_install:
+	dh_auto_install
 	find debian -name *.pyc -delete
-	: # strip docs/ since they aren't really a Python module, there is -doc for it
-	: # TODO find debian -wholename \*scikits/statsmodels/docs | xargs rm -rf
 	find debian -iname COPYING -o -iname LICENSE* | xargs -r rm -f
+	find debian -name cancer.csv -exec chmod a-x {} \;
+	dh_numpy
+	dh_numpy3
 
-
-## immediately useable documentation and exemplar scripts/data
-override_dh_compress:
-	dh_compress -X.py -X.html -X.pdf -X.css -X.jpg -X.txt -X.js -X.json -X.rtc -X.inv -Xobjects.inv
-
-
-override_dh_installdocs:
-	: # Use jquery from Debian package, so prune shipped one
-	-rm ./build/html/_static/jquery.js
-	dh_installdocs
-
+#python-test%: python-install%
+#ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+#	: # Run unittests here against installed statsmodels
+#	cd build/ && \
+#	 PYTHONPATH=`/bin/ls -d $(CURDIR)/$(PACKAGE_ROOT_DIR)/usr/lib/python$*/*/` \
+#	 MPLCONFIGDIR=$(CURDIR)/build \
+#	 python$* /usr/bin/nosetests -s -v --exclude=sandbox statsmodels
+#else
+#	: # Skip unittests due to nocheck
+#endif
+#
 
 ## move binary libraries into -lib
-override_dh_python2:
-	: # Move platform-specific libraries into -lib
-	for lib in $$(find $(PACKAGE_ROOT_DIR)/usr -name '*.so'); do \
-	   sdir=$$(dirname $$lib) ; \
-	   tdir=$(PACKAGE_ROOT_DIR)-lib/$${sdir#*$(PACKAGE_NAME)/} ; \
-	   mkdir -p $$tdir ; \
-	   echo "I: Moving '$$lib' into '$$tdir'." ; \
-	   mv $$lib $$tdir ; \
-	done
-	if [ -x /usr/bin/dh_numpy ]; then dh_numpy -ppython-statsmodels-lib; fi
-	: # Prune scikits/__init__.py to avoid conflicts
-	find debian -wholename \*scikits/__init__.py -delete
-	: # Move scikits. space into a compatibility package
-	set -e; \
-	find debian -wholename \*scikits -type d | while read skd; do \
-		skbd=$$(dirname $$skd); \
-		skbd_=$$(echo $$skbd | sed -e 's/python-statsmodels/python-scikits.statsmodels/g'); \
-		mkdir -p $$skbd_; \
-		mv $$skd $$skbd_; \
-	done
-	dh_python2
-
-# We build documentation only for -indep
-binary-indep: doc-stamp
-binary: binary-arch binary-indep
-
+#override_dh_python2:
+#	: # Move platform-specific libraries into -lib
+#	for lib in $$(find $(PACKAGE_ROOT_DIR)/usr -name '*.so'); do \
+#	   sdir=$$(dirname $$lib) ; \
+#	   tdir=$(PACKAGE_ROOT_DIR)-lib/$${sdir#*$(PACKAGE_NAME)/} ; \
+#	   mkdir -p $$tdir ; \
+#	   echo "I: Moving '$$lib' into '$$tdir'." ; \
+#	   mv $$lib $$tdir ; \
+#	done
 
 get-orig-source:
 	uscan --upstream-version 0 --rename
